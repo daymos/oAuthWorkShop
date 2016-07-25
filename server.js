@@ -3,9 +3,10 @@ const env = require('env2')('./config.env');
 const hapi = require('hapi')
 const port = 3000
 const server = new hapi.Server()
-const https = require('https')
 const querystring = require('querystring') 
+const { httpsRequest, buildUrl } = require('./utils')
 
+console.log(httpsRequest)
 server.connection({port: port})
 server.register([require('inert')],()=>{})
 
@@ -52,8 +53,8 @@ server.route({
   method:'GET',
   path:'/user/{user}',
   handler:(req,reply)=>{
-  httpsRequest({
-     hostname:'github.com',
+    httpsRequest({
+      hostname:'github.com',
       port: 443,
       method:'GET',
       path: querystring.stringify({
@@ -64,7 +65,7 @@ server.route({
         'Accept':'application/json'
       },
 
-  }, (res)=>{console.log(res)})
+    }, (res)=>{console.log(res)})
     reply.file('./user.html') 
   }
 })
@@ -75,45 +76,7 @@ server.start((err)=>{
   console.log(process.env.BASE_URL)
 })
 
-/*var options = {*/
-//hostname: 'www.google.com',
-//port: 443,
-//path: '/',
-//method: 'POST',
-//body: 'fake body'
-/*}*/
-
-/// utils
-function httpsRequest(params, callback){
-  let req = https.request(params, (res)=>{
-    let response = ''
-    res.on('data', (chunk)=>{
-      response += chunk
-    }) 
-    res.on('end',(err)=>{
-      if(err) throw err
-      callback(response)
-    })
-  })
-  req.on('err',(err)=>{
-    console.log(err) 
-  }) 
-  try{
-    req.write(params.body)
-  } catch(e){
-    if (e) console.log('no post request')
-  }
-  req.end()
-}
 
 
-function buildUrl(){
-  let base = 'https://github.com/login/oauth/authorize'
-  return base + '?'+ querystring.stringify({
-    client_id: process.env.GITHUB_CLIENT_ID,
-    redirect_uri: process.env.REDIRECT_URI,
-    scope:'user'
-  })
-}
 
 
