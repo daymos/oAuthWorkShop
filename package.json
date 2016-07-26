@@ -9,9 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "boom": "^3.2.2",
     "env2": "^2.1.0",
     "hapi": "^13.5.0",
     "https": "^1.0.0",
-    "inert": "^4.0.1"
+    "inert": "^4.0.1",
+    "iron": "^4.0.1"
   }
 }

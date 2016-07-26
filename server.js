@@ -1,14 +1,20 @@
 'use strict'
 const env = require('env2')('./config.env');
 const hapi = require('hapi')
-const port = 3000
-const server = new hapi.Server()
-const querystring = require('querystring') 
+const querystring = require('querystring') //format params for queries
+const iron = require('iron') //encryption lib
+const boom = require('boom') // adds reply methods
 const { httpsRequest, buildUrl } = require('./utils')
 
-console.log(httpsRequest)
-server.connection({port: port})
-server.register([require('inert')],()=>{})
+
+const server = new hapi.Server()
+server.connection({
+  port: process.env.PORT
+})
+server.register([
+  require('inert')
+],()=>{
+})
 
 server.route({
   method:'GET',
@@ -43,12 +49,32 @@ server.route({
       }) 
     }, (res)=>{ 
       server.app.access_token = JSON.parse(res).access_token;
-      console.log(server.app.access_token)
+      console.log('content of server.app.access_token :',server.app.access_token)
       reply.file('./authorized.html')
+        .state(process.env.USER_ID, server.app.access_token, {
+          ttl: 60*60*1000,
+          isHttpOnly: true,
+          encoding:'iron',
+          password: process.env.IRON_SECRET
+        })
+        .redirect('/restricted')
     }) 
   }
 })
 
+server.route({
+  method:'GET',
+  path:'/restricted',
+  handler:(req,reply)=>{
+    iron.unseal(req.state[process.env.USER_ID], process.env.IRON_SECRET, iron.defaults, function (err, unsealed) {
+      if(err)throw err
+      console.log('unsealed is: ', unsealed, 'saved token is: ', server.app.access_token)
+      if(unsealed === server.app.access_token){
+        reply.file('./hello_res.html')
+      } else reply(boom.unauthorized('login to see this page'))
+    });
+  }
+})
 server.route({
   method:'GET',
   path:'/user/{user}',
@@ -72,11 +98,8 @@ server.route({
 
 server.start((err)=>{
   if(err) throw err
-  console.log('server is running on port:', port)
+  console.log('server is running on port:', process.env.PORT)
   console.log(process.env.BASE_URL)
 })
-
-
-
 
 
