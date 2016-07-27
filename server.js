@@ -6,15 +6,39 @@ const iron = require('iron') //encryption lib
 const boom = require('boom') // adds reply methods
 const { httpsRequest, buildUrl } = require('./utils')
 
-
+const goodOptions = {
+    ops: {
+        interval: 1000
+    },
+    reporters: {
+        console: [{
+            module: 'good-squeeze',
+            name: 'Squeeze',
+            args: [{ log: '*', response: '*' }]
+        }, {
+            module: 'good-console'
+        }, 'stdout'],
+        http: [{
+            module: 'good-squeeze',
+            name: 'Squeeze',
+            args: [{ error: '*' }]
+        }, {
+            module: 'good-http',
+            args: ['http://prod.logs:3000', {
+                wreck: {
+                    headers: { 'x-api-key': 12345 }
+                }
+            }]
+        }]
+    }
+};
 const server = new hapi.Server()
 server.connection({
   port: process.env.PORT
 })
 server.register([
-  require('inert')
-],()=>{
-})
+  require('inert'), { register: require('good'), options: goodOptions }
+],()=>{})
 
 server.route({
   method:'GET',
